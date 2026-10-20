@@ -2,3 +2,4 @@
 	path = arm-trusted-firmware
 	url = https://github.com/baalwy/arm-trusted-firmware.git
 	branch = mtksoc
+	ignore = all
