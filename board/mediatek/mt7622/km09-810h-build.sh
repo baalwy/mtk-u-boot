@@ -61,6 +61,9 @@ log_manifest() {
 	echo "$(date -Is) $*" >> "$MANIFEST"
 }
 
+BUILD_STAMP="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+log_manifest "===== km09-810h-build START stage=$STAGE stamp=$BUILD_STAMP ====="
+
 build_uboot() {
 	echo "==> Building U-Boot in-tree: $UBOOT_DIR"
 	cd "$UBOOT_DIR"
@@ -68,7 +71,10 @@ build_uboot() {
 	make CROSS_COMPILE="$CROSS" -j"$NPROC"
 	cp -f u-boot.bin "$OUT_DIR/u-boot-km09-810h.bin"
 	cp -f u-boot.dtb "$OUT_DIR/u-boot-km09-810h.dtb"
-	log_manifest "u-boot: $(git log -1 --format='%h') + board files, sha256=$(sha256sum "$OUT_DIR/u-boot-km09-810h.bin" | cut -d' ' -f1)"
+	# The banner embedded in the binary (also printed at boot and by the
+	# 'version' command on the console) carries the build date+time.
+	UBOOT_BANNER="$(strings -a u-boot.bin | grep -m1 -o 'U-Boot 2[0-9]*\.[0-9]*[^)]*)' || true)"
+	log_manifest "u-boot: $(git log -1 --format='%h') + board files, sha256=$(sha256sum "$OUT_DIR/u-boot-km09-810h.bin" | cut -d' ' -f1), banner=\"$UBOOT_BANNER\""
 }
 
 # RAM/UART download mode: bl2.bin is loaded by mtk_uartboot over UART,
@@ -155,3 +161,10 @@ case "$STAGE" in
 esac
 
 echo "==> Done. Artifacts in $OUT_DIR (see manifest-build.txt)"
+log_manifest "===== km09-810h-build DONE stage=$STAGE stamp=$(date -u '+%Y-%m-%d %H:%M:%S UTC') ====="
+echo
+echo "Build stamp: $BUILD_STAMP"
+echo "Embedded U-Boot banner (compare with 'version' on the router console):"
+echo "  ${UBOOT_BANNER:-<not rebuilt this run, see manifest-build.txt>}"
+echo "Artifact timestamps:"
+ls -l --time-style=long-iso "$OUT_DIR"/*.bin "$OUT_DIR"/*.img "$OUT_DIR"/*.dtb 2>/dev/null
