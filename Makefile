@@ -2230,7 +2230,7 @@ endif
 # KERNELVERSION variable in the environment for figuring out which
 # annotated tags are relevant. Pass UBOOTVERSION.
 define filechk_uboot.release
-	KERNELVERSION=$(UBOOTVERSION) $(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree)
+	KERNELVERSION=$(UBOOTVERSION) $(CONFIG_SHELL) $(srctree)/scripts/setlocalversion --no-dirty $(srctree)
 endef
 
 # Store (new) UBOOTRELEASE string in include/config/uboot.release
