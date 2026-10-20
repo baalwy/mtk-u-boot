@@ -278,13 +278,29 @@ static int mt7530_setup(struct mtk_eth_switch_priv *swpriv)
 	/* Enable port isolation to block inter-port communication */
 	mt7530_port_isolation(priv);
 
-	/* Turn on PHYs */
+	/*
+	 * Turn on PHYs and (re)start auto-negotiation.
+	 *
+	 * The MT7530 internal PHYs come out of reset with BMCR == 0x0000,
+	 * i.e. auto-negotiation DISABLED. The vendor Linux PHY stack hides
+	 * this by running genphy_restart_aneg() when the interface is
+	 * brought up, but nothing in U-Boot ever does. Lenient link partners
+	 * (home switches, some Realtek NICs) still connect via parallel
+	 * detection, but strict ones (e.g. Intel server NICs) refuse to link
+	 * with an AN-disabled partner and the port just flaps. So write a
+	 * clean AN-enable + AN-restart and advertise 1000BASE-T here.
+	 */
 	for (i = 0; i < MT753X_NUM_PHYS; i++) {
 		phy_addr = MT753X_PHY_ADDR(priv->phy_base, i);
-		phy_val = mtk_mii_read(priv->epriv.eth, phy_addr, MII_BMCR);
-		phy_val &= ~BMCR_PDOWN;
-		mtk_mii_write(priv->epriv.eth, phy_addr, MII_BMCR, phy_val);
+
+		mtk_mii_write(priv->epriv.eth, phy_addr, MII_BMCR,
+			      BMCR_ANENABLE | BMCR_ANRESTART);
+		/* 1000BASE-T capability: advertise FD + HD */
+		mtk_mii_write(priv->epriv.eth, phy_addr, MII_CTRL1000,
+			      0x0300);
 	}
+
+	mdelay(10);
 
 	return mt7530_mdio_register(priv);
 }
