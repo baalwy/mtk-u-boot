@@ -1,0 +1,44 @@
+Source dump: /home/baalwy/km09-810h/MX35LF1GE4AB-WSON8-km09-810h.BIN
+Source size: 138412032
+Source SHA256: 0404c4aadebaa8f823fb3874a47151b8cb6a98e74f5b227d9ec777f26fe48705
+
+ECC decode: MTK NFI 2048+64, BCH t=4, OOB removed
+clean sectors: 115229
+corrected sectors: 88985
+corrected bits: 102034
+erased sectors: 57927
+uncorrectable sectors: 3
+uncorrectable locations (page:sector): 3104:1, 5276:3, 36587:2
+factory bad blocks: 949
+ECC overall status: PARTIAL (3 uncorrectable sectors retained as read)
+
+Files (size bytes, SHA256):
+logical-128MiB.bin 134217728 fa0115545cf29dee297701f708c023ca88b88cc8c0d67886b8de7bfb29e1234a
+Preloader.bin 524288 b80889a5628c00f3697fb34ec373dbfbc4ca92c2d027d2360bd91aa59f8ac618
+ATF.bin 262144 301f9fe01988530e4eb109d20f823cf3088beb899183ee4c7a02821da3c974ff
+Bootloader.bin 524288 1699f05f1709bb3bfb3b244166d360a64cc758d8c259a071c8ab2027bf3face6
+Config.bin 524288 571f701ba35ea9227927950452f03f0ce80798b6f3efceff7644dbb9697a6fa4
+Factory.bin 262144 a720b189f650e6ae41b210973df2da0bb03cc12d513ef0cb55220a2e8d7ab012
+Image1.bin 50331648 51190aeca0fbde3f974cd35376b95480594a3ce74450533da558b10dd630a14f
+Image2.bin 50331648 3f0f9c142db6b949cf3b0496588738ec5e1c81475487062cb83e2f7b27ee3fef
+Rootdata.bin 16777216 d092484928b68aaa2eb2add350bcc352b02368e42b3c30233b2467d6b1dc8469
+Userdata.bin 14680064 7e3c910acfe7883be00c1382b2a60c41f3595d267f9e17be3517396e2ebb6da8
+ATF-payload.bin 62032 187610491836af2119fd0063c74542df1ab356056bc59fd89b74e0f233ac035e
+Bootloader-payload.bin 326424 d04fb4a6e9f900afa7a749cc85148d1e2d1c7ed5788e3e099062ce54117012c3
+Image1-fit/kernel@1 2797931 58e1cf3f4ba4894818b91b79649487ab5cb6bf06c11c0663ecd2593957a7e209
+Image1-fit/fdt@1 31152 2225609f7bed1de69955b38068e3b25ad8a3c90b5c6f64de39d7a9deccbdb805
+Image2-fit/kernel@1 2801857 080c20851ce9e7a2a81adc29fffe465fc66b5c1409325e91651047243b750659
+Image2-fit/fdt@1 31152 2225609f7bed1de69955b38068e3b25ad8a3c90b5c6f64de39d7a9deccbdb805
+
+LK containers:
+ATF magic=0x58881688 name=atf payload_offset=0x200 payload_size=62032 status=OK
+Bootloader magic=0x58881688 name=LK payload_offset=0x200 payload_size=326424 status=OK
+
+FIT verification:
+Image1 kernel@1: crc32 OK, sha1 OK
+Image1 fdt@1: crc32 OK, sha1 OK
+Image1 all hashes: OK
+Image2 kernel@1: crc32 OK, sha1 OK
+Image2 fdt@1: crc32 OK, sha1 OK
+Image2 all hashes: OK
+DTB parse validation: OK (dtc emitted source-tree lint warnings only)

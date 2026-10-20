@@ -1,0 +1,7 @@
+clean: 115229
+corrected_sectors: 88985
+corrected_bits: 102034
+erased: 57927
+uncorrectable: 3
+factory bad blocks: [949]
+uncorrectable sectors (page,sector) first 50: 3104:1, 5276:3, 36587:2

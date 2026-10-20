@@ -2,7 +2,11 @@
 # ---------------------------------------------------------------------------
 # Mercury KM09-810H (MediaTek MT7622) bootloader build script
 #
-# All builds happen IN-TREE (this repo) or in a persistent TF-A checkout.
+# Everything lives INSIDE this repo (nothing is written to /tmp or $HOME):
+#   - U-Boot:          in-tree build (this repository)
+#   - TF-A (BL2/BL31): git submodule at $UBOOT_DIR/arm-trusted-firmware
+#                      (git clone -> git submodule update --init)
+#   - Artifacts:       $UBOOT_DIR/output/km09-810h/ (committed to GitHub)
 # No /tmp directories are used so that every artifact survives reboots.
 #
 # Hardware facts (verified from the stock NAND dump in
@@ -30,15 +34,15 @@
 #   ./board/mediatek/mt7622/km09-810h-build.sh [uboot|ram|snand|all]
 #
 # Environment overrides:
-#   TFA_DIR   (default: $HOME/arm-trusted-firmware, branch mtksoc)
-#   OUT_DIR   (default: $HOME/km09-810h/bootloader-build)
+#   TFA_DIR   (default: <repo>/arm-trusted-firmware, git submodule, branch mtksoc)
+#   OUT_DIR   (default: <repo>/output/km09-810h)
 #   CROSS     (default: aarch64-linux-gnu-)
 # ---------------------------------------------------------------------------
 set -e
 
 UBOOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
-TFA_DIR="${TFA_DIR:-$HOME/arm-trusted-firmware}"
-OUT_DIR="${OUT_DIR:-$HOME/km09-810h/bootloader-build}"
+TFA_DIR="${TFA_DIR:-$UBOOT_DIR/arm-trusted-firmware}"
+OUT_DIR="${OUT_DIR:-$UBOOT_DIR/output/km09-810h}"
 CROSS="${CROSS:-aarch64-linux-gnu-}"
 DEFCONFIG="mt7622_mercury_km09_810h_defconfig"
 STAGE="${1:-all}"
@@ -47,6 +51,11 @@ NPROC="$(nproc)"
 MANIFEST="$OUT_DIR/manifest-build.txt"
 
 mkdir -p "$OUT_DIR"
+
+if [ ! -e "$TFA_DIR/Makefile" ]; then
+	echo "==> TF-A submodule missing, initializing..."
+	(cd "$UBOOT_DIR" && git submodule update --init arm-trusted-firmware)
+fi
 
 log_manifest() {
 	echo "$(date -Is) $*" >> "$MANIFEST"
@@ -131,6 +140,9 @@ build_snand() {
         combined firmware image; exits to reset on success, Ctrl+C quits).
       - CONFIG_MTK_WEB_FAILSAFE_AFTER_BOOT_FAILURE=y: if normal boot
         fails, the web failsafe starts automatically (stock-like).
+
+    Full documentation incl. stock-firmware restore commands:
+      board/mediatek/mt7622/KM09-810H.md
 EOF
 }
 

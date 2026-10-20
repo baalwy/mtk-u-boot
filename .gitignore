@@ -139,3 +139,8 @@ __pycache__
 
 # Clang's compilation database file
 /compile_commands.json
+
+# KM09-810H: build artifacts and stock backup are intentionally committed
+# (see board/mediatek/mt7622/KM09-810H.md and km09-810h-build.sh)
+!output/
+!output/**
