@@ -54,12 +54,18 @@ static int mdio_write_ranges(struct mii_dev *bus,
 
 		for (devad = devadlo; devad <= devadhi; devad++) {
 			for (reg = reglo; reg <= reghi; reg++) {
-				if (!phydev)
+				/*
+				 * Plain C22 (and C45 via "<devad>.<reg>" syntax)
+				 * must always hit the bus directly. Only the
+				 * rx/wx "extended" commands go through phylib.
+				 * The former phy_read_mmd()/phy_write_mmd() branch
+				 * crashed on any address with a bound phy_device
+				 * (e.g. MT7530 mgmt PHY 31 on mtk_eth) because it
+				 * passed MDIO_DEVAD_NONE into the MMD helpers.
+				 */
+				if (!phydev || !extended)
 					err = bus->write(bus, addr, devad,
 							 reg, data);
-				else if (!extended)
-					err = phy_write_mmd(phydev, devad,
-							    reg, data);
 				else
 					err = phydev->drv->writeext(phydev,
 							addr, devad, reg, data);
@@ -91,10 +97,8 @@ static int mdio_read_ranges(struct mii_dev *bus,
 			for (reg = reglo; reg <= reghi; reg++) {
 				int val;
 
-				if (!phydev)
+				if (!phydev || !extended)
 					val = bus->read(bus, addr, devad, reg);
-				else if (!extended)
-					val = phy_read_mmd(phydev, devad, reg);
 				else
 					val = phydev->drv->readext(phydev, addr,
 						devad, reg);
