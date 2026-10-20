@@ -1,0 +1,175 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * U-Boot device tree for the Mercury KM09-810H.
+ * Configured with full GMAC0/GMAC1 and MT7530 RGMII switch support.
+ */
+
+/dts-v1/;
+#include "mt7622.dtsi"
+#include "mt7622-u-boot.dtsi"
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	model = "Mercury KM09-810H";
+	compatible = "mercury,km09-810h", "mediatek,mt7622";
+
+	chosen {
+		stdout-path = &uart0;
+		tick-timer = &timer0;
+	};
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x40000000 0x20000000>;
+	};
+};
+
+&pinctrl {
+	eth_pins: eth-pins {
+		mux {
+			function = "eth";
+			groups = "mdc_mdio", "rgmii_via_gmac2";
+		};
+	};
+
+	snand_pins: snand-pins {
+		mux {
+			function = "flash";
+			groups = "snfi";
+		};
+
+		conf-cmd-data {
+			pins = "SPI_WP", "SPI_HOLD", "SPI_MOSI",
+			       "SPI_MISO", "SPI_CS";
+			input-enable;
+			drive-strength = <16>;
+			bias-pull-up;
+		};
+
+		conf-clk {
+			pins = "SPI_CLK";
+			drive-strength = <16>;
+			bias-pull-down;
+		};
+	};
+
+	uart0_pins: uart0-pins {
+		mux {
+			function = "uart";
+			groups = "uart0_0_tx_rx";
+		};
+	};
+
+	watchdog_pins: watchdog-pins {
+		mux {
+			function = "watchdog";
+			groups = "watchdog";
+		};
+	};
+};
+
+&snand {
+	pinctrl-names = "default";
+	pinctrl-0 = <&snand_pins>;
+	status = "okay";
+	quad-spi;
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pins>;
+	status = "okay";
+};
+
+&watchdog {
+	pinctrl-names = "default";
+	pinctrl-0 = <&watchdog_pins>;
+	status = "okay";
+};
+
+&eth {
+	pinctrl-names = "default";
+	pinctrl-0 = <&eth_pins>;
+	status = "okay";
+
+	gmac0: mac@0 {
+		compatible = "mediatek,eth-mac";
+		reg = <0>;
+		phy-mode = "2500base-x";
+		phy-handle = <&phy7>;
+	};
+
+	gmac1: mac@1 {
+		compatible = "mediatek,eth-mac";
+		reg = <1>;
+		phy-mode = "rgmii";
+
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
+			pause;
+		};
+	};
+
+	mdio: mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy7: ethernet-phy@7 {
+			compatible = "ethernet-phy-ieee802.3-c45";
+			reg = <7>;
+			phy-connection-type = "2500base-x";
+		};
+
+		switch0: switch@1f {
+			compatible = "mediatek,mt7530";
+			reg = <31>;
+			reset-gpios = <&gpio 54 GPIO_ACTIVE_HIGH>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			interrupt-controller;
+			#interrupt-cells = <1>;
+			interrupt-parent = <&pinctrl>;
+			interrupts = <53 IRQ_TYPE_LEVEL_HIGH>;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@1 {
+					reg = <1>;
+					label = "lan4";
+				};
+
+				port@2 {
+					reg = <2>;
+					label = "lan3";
+				};
+
+				port@3 {
+					reg = <3>;
+					label = "lan2";
+				};
+
+				port@4 {
+					reg = <4>;
+					label = "lan1";
+				};
+
+				port@5 {
+					reg = <5>;
+					label = "cpu";
+					ethernet = <&gmac1>;
+					phy-mode = "rgmii";
+
+					fixed-link {
+						speed = <1000>;
+						full-duplex;
+						pause;
+					};
+				};
+			};
+		};
+	};
+};
