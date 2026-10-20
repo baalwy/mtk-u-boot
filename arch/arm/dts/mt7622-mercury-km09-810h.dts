@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * U-Boot device tree for the Mercury KM09-810H.
- * Configured with full GMAC0/GMAC1 and MT7530 RGMII switch support.
+ * Configured with standard U-Boot MT7530 switch support.
  */
 
 /dts-v1/;
@@ -89,87 +89,15 @@
 };
 
 &eth {
-	pinctrl-names = "default";
-	pinctrl-0 = <&eth_pins>;
 	status = "okay";
+	mediatek,gmac-id = <1>;
+	phy-mode = "rgmii";
+	mediatek,switch = "mt7530";
+	reset-gpios = <&gpio 54 GPIO_ACTIVE_HIGH>;
 
-	gmac0: mac@0 {
-		compatible = "mediatek,eth-mac";
-		reg = <0>;
-		phy-mode = "2500base-x";
-		phy-handle = <&phy7>;
-	};
-
-	gmac1: mac@1 {
-		compatible = "mediatek,eth-mac";
-		reg = <1>;
-		phy-mode = "rgmii";
-
-		fixed-link {
-			speed = <1000>;
-			full-duplex;
-			pause;
-		};
-	};
-
-	mdio: mdio-bus {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		phy7: ethernet-phy@7 {
-			compatible = "ethernet-phy-ieee802.3-c45";
-			reg = <7>;
-			phy-connection-type = "2500base-x";
-		};
-
-		switch0: switch@1f {
-			compatible = "mediatek,mt7530";
-			reg = <31>;
-			reset-gpios = <&gpio 54 GPIO_ACTIVE_HIGH>;
-			gpio-controller;
-			#gpio-cells = <2>;
-			interrupt-controller;
-			#interrupt-cells = <1>;
-			interrupt-parent = <&pinctrl>;
-			interrupts = <53 IRQ_TYPE_LEVEL_HIGH>;
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-
-				port@1 {
-					reg = <1>;
-					label = "lan4";
-				};
-
-				port@2 {
-					reg = <2>;
-					label = "lan3";
-				};
-
-				port@3 {
-					reg = <3>;
-					label = "lan2";
-				};
-
-				port@4 {
-					reg = <4>;
-					label = "lan1";
-				};
-
-				port@5 {
-					reg = <5>;
-					label = "cpu";
-					ethernet = <&gmac1>;
-					phy-mode = "rgmii";
-
-					fixed-link {
-						speed = <1000>;
-						full-duplex;
-						pause;
-					};
-				};
-			};
-		};
+	fixed-link {
+		speed = <1000>;
+		full-duplex;
+		pause;
 	};
 };
