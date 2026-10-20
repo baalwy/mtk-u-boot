@@ -559,8 +559,15 @@ static int do_mtd_io(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	/* Search for the first good block after the given offset */
 	off = start_off;
-	while (mtd_block_isbad(mtd, off))
+	while (mtd_block_isbad(mtd, off)) {
 		off += mtd->erasesize;
+		if (off >= mtd->size) {
+			printf("No good erase block found at or after 0x%08llx\n",
+			       start_off);
+			ret = CMD_RET_FAILURE;
+			goto out_put_mtd;
+		}
+	}
 
 	led_activity_blink();
 
@@ -569,10 +576,25 @@ static int do_mtd_io(struct cmd_tbl *cmdtp, int flag, int argc,
 
 	/* Loop over the pages to do the actual read/write */
 	while (remaining) {
-		/* Skip the block if it is bad */
+		/*
+		 * Skip the block if it is bad. Keep the data offset aligned
+		 * with the flash offset (consume the corresponding part of the
+		 * user buffer on write / leave it as 0xFF on read), otherwise
+		 * everything after a bad block would be shifted.
+		 */
 		if (mtd_is_aligned_with_block_size(mtd, off) &&
 		    mtd_block_isbad(mtd, off)) {
-			off += mtd->erasesize;
+			u64 skip = min_t(u64, mtd->erasesize, remaining);
+
+			printf("Skipping bad block at 0x%08llx\n", off);
+			if (read)
+				memset(io_op.datbuf, 0xff, skip);
+			if (woob)
+				io_op.oobbuf += skip / mtd->writesize *
+					       mtd->oobsize;
+			off += skip;
+			remaining -= skip;
+			io_op.datbuf += skip;
 			continue;
 		}
 
