@@ -120,10 +120,10 @@ build_snand() {
     matching DDR variant!):
 
       # from a working U-Boot (RAM test or stock bootmenu TFTP):
-      tftp 0x46000000 bl2-snand-2k64-1ddr.img
+      tftpboot 0x46000000 bl2-snand-2k64-1ddr.img
       mtkupgrade bl2
       # fallback: mtd erase bl2 && mtd write bl2 0x46000000 0 $filesize
-      tftp 0x46000000 fip-snand-1ddr.bin
+      tftpboot 0x46000000 fip-snand-1ddr.bin
       mtkupgrade fip
       # fallback: mtd erase fip && mtd write fip 0x46000000 0 $filesize
       # fip partition (0x80000, 768 KiB) spans the stock ATF+Bootloader
