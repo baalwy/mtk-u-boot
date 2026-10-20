@@ -62,7 +62,23 @@ log_manifest() {
 }
 
 BUILD_STAMP="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+BUILD_TS="$(date +%Y%m%d-%H%M%S)"   # local time, matches the banner's +TZ
+# Timestamped copies from previous builds are superseded by this run:
+# drop them so only the current -YYYYmmdd-HHMMSS set is kept.
+for ext in bin img dtb; do
+        find "$OUT_DIR" -maxdepth  1 -type f \
+                -name "*-????????-??????.$ext" ! -name "*-${BUILD_TS}.$ext" -delete
+done
 log_manifest "===== km09-810h-build START stage=$STAGE stamp=$BUILD_STAMP ====="
+
+# Emit a build-timestamped copy of an artifact next to its fixed-name
+# original: foo.bin -> foo-YYYYmmdd-HHMMSS.bin (same content/sha256).
+stamp_copy() {
+        src="$OUT_DIR/$1"
+        base="${1%.*}"
+        ext="${1##*.}"
+        cp -f "$src" "$OUT_DIR/${base}-${BUILD_TS}.${ext}"
+}
 
 build_uboot() {
 	echo "==> Building U-Boot in-tree: $UBOOT_DIR"
@@ -71,6 +87,8 @@ build_uboot() {
 	make CROSS_COMPILE="$CROSS" -j"$NPROC"
 	cp -f u-boot.bin "$OUT_DIR/u-boot-km09-810h.bin"
 	cp -f u-boot.dtb "$OUT_DIR/u-boot-km09-810h.dtb"
+	stamp_copy u-boot-km09-810h.bin
+	stamp_copy u-boot-km09-810h.dtb
 	# The banner embedded in the binary (also printed at boot and by the
 	# 'version' command on the console) carries the build date+time.
 	UBOOT_BANNER="$(strings -a u-boot.bin | grep -m1 -o 'U-Boot 2[0-9]*\.[0-9]*[^)]*)' || true)"
@@ -92,6 +110,8 @@ build_ram() {
 			BUILD_BASE="$TFA_DIR/build-km09-ram-$name" all fip > "$OUT_DIR/build-ram-$name.log" 2>&1
 		cp -f "$TFA_DIR/build-km09-ram-$name/mt7622/release/bl2.bin" "$OUT_DIR/bl2-ram-uart-$name.bin"
 		cp -f "$TFA_DIR/build-km09-ram-$name/mt7622/release/fip.bin" "$OUT_DIR/fip-ram-uart-$name.bin"
+		stamp_copy "bl2-ram-uart-$name.bin"
+		stamp_copy "fip-ram-uart-$name.bin"
 		log_manifest "bl2-ram-uart-$name: $(sha256sum "$OUT_DIR/bl2-ram-uart-$name.bin" | cut -d' ' -f1)"
 		log_manifest "fip-ram-uart-$name: $(sha256sum "$OUT_DIR/fip-ram-uart-$name.bin" | cut -d' ' -f1)"
 	done
@@ -118,6 +138,9 @@ build_snand() {
 		cp -f "$TFA_DIR/build-km09-snand-$name/mt7622/release/bl2.bin" "$OUT_DIR/bl2-snand-2k64-$name.bin"
 		cp -f "$TFA_DIR/build-km09-snand-$name/mt7622/release/bl2.img" "$OUT_DIR/bl2-snand-2k64-$name.img"
 		cp -f "$TFA_DIR/build-km09-snand-$name/mt7622/release/fip.bin" "$OUT_DIR/fip-snand-$name.bin"
+		stamp_copy "bl2-snand-2k64-$name.bin"
+		stamp_copy "bl2-snand-2k64-$name.img"
+		stamp_copy "fip-snand-$name.bin"
 		log_manifest "bl2-snand-2k64-$name.img: $(sha256sum "$OUT_DIR/bl2-snand-2k64-$name.img" | cut -d' ' -f1)"
 		log_manifest "fip-snand-$name: $(sha256sum "$OUT_DIR/fip-snand-$name.bin" | cut -d' ' -f1)"
 	done
