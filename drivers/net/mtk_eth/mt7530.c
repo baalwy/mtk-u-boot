@@ -91,12 +91,13 @@ static int mt7530_pad_clk_setup(struct mt753x_switch_priv *priv, int mode)
 static void mt7530_mac_control(struct mtk_eth_switch_priv *swpriv, bool enable)
 {
 	struct mt753x_switch_priv *priv = (struct mt753x_switch_priv *)swpriv;
+	u32 cpu_port = priv->epriv.cpu_port;
 	u32 pmcr = FORCE_MODE;
 
 	if (enable)
 		pmcr = priv->pmcr;
 
-	mt753x_reg_write(priv, PMCR_REG(6), pmcr);
+	mt753x_reg_write(priv, PMCR_REG(cpu_port), pmcr);
 }
 
 static int mt7530_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
@@ -143,6 +144,36 @@ static int mt7530_mdio_register(struct mt753x_switch_priv *priv)
 	priv->mdio_bus = mdio_bus;
 
 	return 0;
+}
+
+/*
+ * Port matrix isolation with the CPU port on either port5 or port6
+ * ("mediatek,cpu-port" in the eth DT node). User PHY ports 0-4 only
+ * forward to the CPU port, the CPU port forwards to all user ports.
+ */
+static void mt7530_port_isolation(struct mt753x_switch_priv *priv)
+{
+	u32 cpu_port = priv->epriv.cpu_port;
+	u32 i, matrix;
+
+	for (i = 0; i < MT753X_NUM_PORTS; i++) {
+		/* Set port matrix mode */
+		if (i == cpu_port) {
+			matrix = cpu_port == 5 ? 0x1f : 0x3f;
+		} else if (i < 5) {
+			matrix = BIT(cpu_port);
+		} else {
+			/* Port5 when port6 is the CPU: face the CPU port */
+			matrix = (cpu_port == 6 && i == 5) ? BIT(6) : 0;
+		}
+
+		mt753x_reg_write(priv, PCR_REG(i), matrix << PORT_MATRIX_S);
+
+		/* Set port mode to user port */
+		mt753x_reg_write(priv, PVC_REG(i),
+				 (0x8100 << STAG_VPID_S) |
+				 (VLAN_ATTR_USER << VLAN_ATTR_S));
+	}
 }
 
 static int mt7530_setup(struct mtk_eth_switch_priv *swpriv)
@@ -198,25 +229,39 @@ static int mt7530_setup(struct mtk_eth_switch_priv *swpriv)
 	      (SPEED_1000M << FORCE_SPD_S) |
 	      FORCE_DPX | FORCE_LINK;
 
-	/* MT7530 Port6: Forced 1000M/FD, FC disabled */
+	/* CPU port PMCR: Forced 1000M/FD, FC disabled */
 	priv->pmcr = val;
 
-	/* MT7530 Port5: Forced link down */
+	/* Keep MAC links down before starting eth */
 	mt753x_reg_write(priv, PMCR_REG(5), FORCE_MODE);
-
-	/* Keep MAC link down before starting eth */
 	mt753x_reg_write(priv, PMCR_REG(6), FORCE_MODE);
 
-	/* MT7530 Port6: Set to RGMII */
-	mt753x_reg_rmw(priv, MT7530_P6ECR, P6_INTF_MODE_M, P6_INTF_MODE_RGMII);
+	if (priv->epriv.cpu_port == 5) {
+		/*
+		 * CPU on Port5 (RGMII to SoC GMAC, e.g. MT7622 GMAC1 on
+		 * the Mercury KM09-810H). Port6 is not connected.
+		 */
 
-	/* Hardware Trap: Enable Port6, Disable Port5 */
-	mt753x_reg_read(priv, HWTRAP_REG, &val);
-	val |= CHG_TRAP | LOOPDET_DIS | P5_INTF_DIS |
-	       (P5_INTF_SEL_GMAC5 << P5_INTF_SEL_S) |
-	       (P5_INTF_MODE_RGMII << P5_INTF_MODE_S);
-	val &= ~(C_MDIO_BPS | P6_INTF_DIS);
-	mt753x_reg_write(priv, MHWTRAP_REG, val);
+		/* Hardware Trap: Enable Port5 (GMAC5/RGMII), Disable Port6 */
+		mt753x_reg_read(priv, HWTRAP_REG, &val);
+		val |= CHG_TRAP | LOOPDET_DIS | P6_INTF_DIS |
+		       (P5_INTF_SEL_GMAC5 << P5_INTF_SEL_S) |
+		       (P5_INTF_MODE_RGMII << P5_INTF_MODE_S);
+		val &= ~(C_MDIO_BPS | P5_INTF_DIS);
+		mt753x_reg_write(priv, MHWTRAP_REG, val);
+	} else {
+		/* MT7530 Port6: Set to RGMII */
+		mt753x_reg_rmw(priv, MT7530_P6ECR, P6_INTF_MODE_M,
+			       P6_INTF_MODE_RGMII);
+
+		/* Hardware Trap: Enable Port6, Disable Port5 */
+		mt753x_reg_read(priv, HWTRAP_REG, &val);
+		val |= CHG_TRAP | LOOPDET_DIS | P5_INTF_DIS |
+		       (P5_INTF_SEL_GMAC5 << P5_INTF_SEL_S) |
+		       (P5_INTF_MODE_RGMII << P5_INTF_MODE_S);
+		val &= ~(C_MDIO_BPS | P6_INTF_DIS);
+		mt753x_reg_write(priv, MHWTRAP_REG, val);
+	}
 
 	/* Setup switch core pll */
 	mt7530_pad_clk_setup(priv, priv->epriv.phy_interface);
@@ -231,7 +276,7 @@ static int mt7530_setup(struct mtk_eth_switch_priv *swpriv)
 		mt753x_reg_rmw(priv, MT7530_TRGMII_RD(i), RD_TAP_M, 16);
 
 	/* Enable port isolation to block inter-port communication */
-	mt753x_port_isolation(priv);
+	mt7530_port_isolation(priv);
 
 	/* Turn on PHYs */
 	for (i = 0; i < MT753X_NUM_PHYS; i++) {

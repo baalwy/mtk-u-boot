@@ -347,7 +347,7 @@ static int mtk_mdio_register(struct udevice *dev)
 	return 0;
 }
 
-static int mtk_switch_init(struct mtk_eth_priv *priv)
+static int mtk_switch_init(struct udevice *dev, struct mtk_eth_priv *priv)
 {
 	struct mtk_eth_switch *swdrvs = ll_entry_start(struct mtk_eth_switch,
 						       mtk_eth_switch);
@@ -426,6 +426,9 @@ static int mtk_switch_init(struct mtk_eth_priv *priv)
 	priv->swpriv->phy_interface = priv->phy_interface;
 	priv->swpriv->sw = swdrv;
 	priv->swpriv->ethsys_base = regmap_get_range(priv->ethsys_regmap, 0);
+	/* Which switch port is wired to the SoC GMAC (default: port6) */
+	priv->swpriv->cpu_port = dev_read_u32_default(dev,
+						      "mediatek,cpu-port", 6);
 
 	ret = swdrv->setup(priv->swpriv);
 	if (ret) {
@@ -1265,7 +1268,7 @@ static int mtk_eth_probe(struct udevice *dev)
 		return mtk_phy_probe(dev);
 
 	/* Initialize switch */
-	return mtk_switch_init(priv);
+	return mtk_switch_init(dev, priv);
 }
 
 static int mtk_eth_remove(struct udevice *dev)

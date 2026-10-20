@@ -95,6 +95,8 @@
 	mediatek,gmac-id = <1>;
 	phy-mode = "rgmii";
 	mediatek,switch = "mt7530";
+	/* MT7530 CPU link is on switch Port5 (vendor DTB: port@5 label "cpu") */
+	mediatek,cpu-port = <5>;
 	reset-gpios = <&gpio 54 GPIO_ACTIVE_HIGH>;
 
 	fixed-link {

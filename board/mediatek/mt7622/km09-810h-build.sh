@@ -14,12 +14,14 @@
 #     GMAC1 (phy-mode rgmii). Confirmed by stock bootloader strings:
 #     "GMAC1 Force link status enable !!" / "MT7530 Reset Completed!!"
 #     and by the vendor DTB: mac@1 rgmii <- switch@1f port@5 label "cpu".
+#     NOTE: the mtksoc mt7530.c driver defaults to Port6 as CPU, so the DTS
+#     sets "mediatek,cpu-port = <5>" (read by mtk_eth.c, applied in
+#     drivers/net/mtk_eth/mt7530.c: HW trap enables P5/disables P6).
 #   - GMAC0 is the WAN port behind an Aquantia 2500base-x PHY (not used
 #     by U-Boot here).
-#   - Stock flash layout (logical offsets):
-#       Preloader 0x000000 (BL2 goes here, write bl2.img NOT bl2.bin)
-#       ATF       0x080000 (FIP goes here, spans ATF+Bootloader, 768 KiB)
-#       Bootloader 0x0C0000 (old LK U-Boot; overwritten by the FIP)
+#   - Stock flash layout (logical offsets; U-Boot mtdparts names in ());
+#       bl2/"Preloader" 0x000000 (BL2 goes here, write bl2.img NOT bl2.bin)
+#       fip/"ATF"+"Bootloader" 0x080000 (FIP spans both, 768 KiB)
 #       Config    0x140000, Factory 0x1C0000  (keep! never touch)
 #   - Bad-block handling: stock BMT v2 at last block, NOT NMBM. Do not
 #     enable CONFIG_ENABLE_NAND_NMBM on this board.
@@ -110,14 +112,25 @@ build_snand() {
 
       # from a working U-Boot (RAM test or stock bootmenu TFTP):
       tftp 0x46000000 bl2-snand-2k64-1ddr.img
-      mtd erase Preloader && mtd write Preloader 0x46000000 $filesize
+      mtkupgrade bl2
+      # (fallback: mtd erase bl2 && mtd write bl2 0x46000000 $filesize)
       tftp 0x46000000 fip-snand-1ddr.bin
-      mtd erase ATF && mtd erase Bootloader
-      mtd write ATF 0x46000000 $filesize
-      # FIP spans ATF+Bootloader partitions by design (0x80000..0x140000)
+      mtkupgrade fip
+      # (fallback: mtd erase fip && mtd write fip 0x46000000 $filesize)
+      # fip partition (0x80000, 768 KiB) spans the stock ATF+Bootloader
+      # regions by design; mtkupgrade validates the BRLYT/FIP headers
+      # (CONFIG_MTK_UPGRADE_BL2_VERIFY / _FIP_VERIFY).
 
     NEVER write bl2.bin to NAND - use bl2.img (has BootROM NFI header).
     NEVER touch Config / Factory partitions.
+
+    Failsafe / recovery (built into this U-Boot):
+      - Press any key during boot -> MediaTek bootmenu (mtkload,
+        mtkupgrade bl2/fip/simg, "Start Web failsafe", ...).
+      - httpd  -> web failsafe UI at http://192.168.1.1/ (upload a
+        combined firmware image; exits to reset on success, Ctrl+C quits).
+      - CONFIG_MTK_WEB_FAILSAFE_AFTER_BOOT_FAILURE=y: if normal boot
+        fails, the web failsafe starts automatically (stock-like).
 EOF
 }
 

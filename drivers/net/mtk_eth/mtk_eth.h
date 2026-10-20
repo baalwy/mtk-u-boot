@@ -56,6 +56,8 @@ struct mtk_eth_switch_priv {
 	const struct mtk_soc_data *soc;
 	void *ethsys_base;
 	int phy_interface;
+	/* MT753x port wired to the SoC GMAC ("mediatek,cpu-port", default 6) */
+	int cpu_port;
 };
 
 enum mkt_eth_capabilities {
