@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * U-Boot device tree for the Mercury KM09-810H.
- * Configured with standard U-Boot MT7530 switch support.
+ * Configured with GMAC1 connected to internal MT7530 switch via RGMII (port@5 = CPU),
+ * matching the stock bootloader ("GMAC1 Force link status enable" / "MT7530 Reset Completed").
+ * GMAC0 is the WAN port behind an Aquantia PHY (2500base-x) and is NOT used here.
  */
 
 /dts-v1/;
