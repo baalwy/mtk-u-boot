@@ -1382,6 +1382,7 @@ void net_process_received_packet(uchar *in_packet, int len)
 			rxhand_tcp_f((union tcp_build_pkt *)ip, len);
 			return;
 #elif defined(CONFIG_MTK_TCP)
+		} else if (ip->ip_p == IPPROTO_TCP) {
 			/*
 			 * Fork fix: MTK's TCP framework (net/mtk_tcp.c, used by
 			 * httpd/Web failsafe) must receive TCP packets even when

@@ -2,8 +2,8 @@ Building mt7622
 true
 make[1]: Nothing to be done for 'all'.
 EL3 Runtime Firmware BL31: offset=0xB0, size=0xB350, cmdline="--soc-fw"
-Non-Trusted Firmware BL33: offset=0xB400, size=0x81578, cmdline="--nt-fw"
-FIP checksum data: offset=0x8C978, size=0x28, cmdline="--fip-chksum"
+Non-Trusted Firmware BL33: offset=0xB400, size=0x81DD8, cmdline="--nt-fw"
+FIP checksum data: offset=0x8D1D8, size=0x28, cmdline="--fip-chksum"
 
 Built /home/baalwy/u-boot/arm-trusted-firmware/build-km09-snand-1ddr/mt7622/release/fip.bin successfully
 
