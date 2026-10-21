@@ -1381,6 +1381,16 @@ void net_process_received_packet(uchar *in_packet, int len)
 #endif
 			rxhand_tcp_f((union tcp_build_pkt *)ip, len);
 			return;
+#elif defined(CONFIG_MTK_TCP)
+			/*
+			 * Fork fix: MTK's TCP framework (net/mtk_tcp.c, used by
+			 * httpd/Web failsafe) must receive TCP packets even when
+			 * upstream CONFIG_PROT_TCP is disabled; without this path,
+			 * SYNs are silently dropped and the web UI never answers
+			 * although ICMP/UDP (ping/tftp) work fine.
+			 */
+			mtk_receive_tcp((struct ip_hdr *)ip, len, et);
+			return;
 #endif
 		} else if (ip->ip_p != IPPROTO_UDP) {	/* Only UDP packets */
 			return;
