@@ -53,7 +53,7 @@ CONFIG_PARTITION_TYPE_GUID=y
 # Partition names/offsets follow the stock KM09-810H layout; "bl2" and "fip"
 # match the names required by mtkupgrade/httpd failsafe (fip spans stock
 # ATF+Bootloader, offset 0x80000, size 0xc0000)
-CONFIG_MTDPARTS_DEFAULT="spi-nand0:512k(bl2),768k(fip),512k(Config),256k(Factory),48m(Image1),48m(Image2),16m(Rootdata),14m(Userdata)"
+CONFIG_MTDPARTS_DEFAULT="spi-nand0:512k(bl2),768k(fip),512k(Config),256k(Factory),48m(firmware),48m(Image2),16m(Rootdata),14m(Userdata)"
 CONFIG_ENV_OVERWRITE=y
 CONFIG_ENV_IS_NOWHERE=y
 CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG=y
